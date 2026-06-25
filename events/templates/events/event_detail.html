@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — Rockstar Events{% endblock %}
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between;">
+  <a class="btn btn-secondary" href="/">&larr; All events</a>
+  {% if user == event.organizer %}
+    <div style="display:flex; gap:.5rem;">
+      <a class="btn" href="{% url 'edit_event' event.pk %}">Edit</a>
+      <a class="btn danger" href="{% url 'delete_event' event.pk %}">Delete</a>
+    </div>
+  {% endif %}
+</div>
+
+{% if event.image %}
+  <img src="{{ event.image.url }}" alt="{{ event.title }}"
+       style="width:100%; max-height:320px; object-fit:cover; border-radius:8px; margin-top:.75rem;">
+{% endif %}
+
+<h1 style="margin-top:.75rem;">{{ event.title }}</h1>
+
+{% if event.description %}
+  <p style="margin-top:.75rem;">{{ event.description|linebreaksbr }}</p>
+{% endif %}
+
+<div style="display:flex; flex-direction:column; gap:.4rem; margin-top:1rem;">
+  <p class="meta">📅 {{ event.starts_at|date:"l, N j, Y" }}</p>
+  <p class="meta">🕐 {{ event.starts_at|date:"P" }}{% if event.ends_at %} – {{ event.ends_at|date:"P" }}{% endif %}</p>
+  {% if event.location %}
+    <p class="meta">📍 {{ event.location }}</p>
+  {% endif %}
+  <p class="meta">👤 Organised by {{ event.organizer.first_name|default:event.organizer.username }}</p>
+  {% if event.tags.all %}
+    <div style="display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem;">
+      {% for tag in event.tags.all %}
+        <span style="background:var(--yellow); color:var(--dark); border-radius:4px; padding:.15rem .5rem; font-size:.8rem; font-weight:600;">{{ tag.name }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<h2>
+  Attendees ({{ event.attendee_count }}{% if event.max_attendees %}/{{ event.max_attendees }}{% endif %})
+</h2>
+
+{% if event.registrations.all %}
+  <ul style="padding-left:1.25rem;">
+    {% for reg in event.registrations.all %}
+      <li>{{ reg.user.first_name|default:reg.user.username }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p style="color:#666;">No one registered yet.</p>
+{% endif %}
+
+{% if user.is_authenticated %}
+  <div style="margin-top:1.5rem;">
+    {% if is_registered %}
+      <form method="post" action="{% url 'event_unregister' event.pk %}">
+        {% csrf_token %}
+        <button class="danger" type="submit">Cancel registration</button>
+      </form>
+    {% elif event.is_full %}
+      <button disabled>Event full</button>
+    {% else %}
+      <form method="post" action="{% url 'event_register' event.pk %}">
+        {% csrf_token %}
+        <button type="submit">Register</button>
+      </form>
+    {% endif %}
+  </div>
+{% else %}
+  <p style="margin-top:1.5rem; color:#666;"><a href="{% url 'poc_login' %}?next={{ request.path }}">Sign in</a> to register.</p>
+{% endif %}
+{% endblock %}

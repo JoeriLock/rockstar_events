@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{% if event %}Edit{% else %}Create{% endif %} event — Rockstar Events{% endblock %}
+{% block content %}
+<a class="btn btn-secondary" href="{% if event %}{% url 'event_detail' event.pk %}{% else %}/{% endif %}">
+  &larr; {% if event %}Back to event{% else %}All events{% endif %}
+</a>
+<h1 style="margin-top:.75rem;">{% if event %}Edit event{% else %}Create event{% endif %}</h1>
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.name == "tags" %}
+        {{ field }}
+        <label style="position:relative;">
+          <span>Tags</span>
+          <div id="tag-input-box" style="display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; padding:.45rem .6rem; border:1px solid #ccc; border-radius:6px; background:#fff; cursor:text; min-height:2.4rem;">
+            <input id="tag-text" type="text" placeholder="Search or create a tag…"
+                   autocomplete="off"
+                   style="border:none; outline:none; flex:1; min-width:8rem; font-size:inherit; background:transparent; padding:0;">
+          </div>
+          <div id="tag-dropdown" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #ccc; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:100; overflow:hidden;"></div>
+        </label>
+      {% else %}
+        <label>
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          {{ field }}
+          {% if field.errors %}<span style="color:#c00; font-size:.875rem;">{{ field.errors.0 }}</span>{% endif %}
+        </label>
+      {% endif %}
+    {% endfor %}
+    <button type="submit">{% if event %}Save changes{% else %}Create{% endif %}</button>
+  </form>
+</div>
+
+<style>
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  background: var(--yellow);
+  color: var(--dark);
+  border-radius: 4px;
+  padding: .15rem .5rem;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: .9rem;
+  line-height: 1;
+  color: var(--dark);
+  margin: 0;
+  min-width: unset;
+}
+.tag-option {
+  padding: .5rem .75rem;
+  cursor: pointer;
+  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.tag-option:hover, .tag-option.active {
+  background: #f5f5f5;
+}
+.tag-option.create-option {
+  color: #555;
+  border-top: 1px solid #eee;
+}
+.tag-option .badge {
+  background: var(--yellow);
+  color: var(--dark);
+  border-radius: 4px;
+  padding: .1rem .4rem;
+  font-size: .75rem;
+  font-weight: 600;
+}
+</style>
+
+{{ all_tags|json_script:"all-tags-data" }}
+
+<script>
+(function () {
+  const allTags = JSON.parse(document.getElementById('all-tags-data').textContent);
+  const hiddenInput = document.getElementById('id_tags');
+  const textInput = document.getElementById('tag-text');
+  const box = document.getElementById('tag-input-box');
+  const dropdown = document.getElementById('tag-dropdown');
+
+  let tags = hiddenInput.value
+    ? hiddenInput.value.split(',').map(t => t.trim()).filter(Boolean)
+    : [];
+  let activeIndex = -1;
+
+  function sync() {
+    hiddenInput.value = tags.join(',');
+  }
+
+  function addChip(name) {
+    name = name.trim().toLowerCase();
+    if (!name || tags.includes(name)) return;
+    tags.push(name);
+    sync();
+    renderChips();
+    textInput.value = '';
+    hideDropdown();
+  }
+
+  function removeChip(name) {
+    tags = tags.filter(t => t !== name);
+    sync();
+    renderChips();
+  }
+
+  function renderChips() {
+    box.querySelectorAll('.tag-chip').forEach(el => el.remove());
+    tags.forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = name + ' <button type="button" aria-label="Remove">&times;</button>';
+      chip.querySelector('button').addEventListener('click', () => removeChip(name));
+      box.insertBefore(chip, textInput);
+    });
+  }
+
+  function showDropdown(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) { hideDropdown(); return; }
+
+    const matches = allTags.filter(t => t.includes(q) && !tags.includes(t));
+    const exactMatch = allTags.some(t => t === q) || tags.includes(q);
+
+    dropdown.innerHTML = '';
+    activeIndex = -1;
+
+    matches.forEach(name => {
+      const el = document.createElement('div');
+      el.className = 'tag-option';
+      el.innerHTML = `<span class="badge">${name}</span>`;
+      el.addEventListener('mousedown', e => { e.preventDefault(); addChip(name); });
+      dropdown.appendChild(el);
+    });
+
+    if (!exactMatch) {
+      const el = document.createElement('div');
+      el.className = 'tag-option create-option';
+      el.innerHTML = `<span>Create</span> <span class="badge">${q}</span>`;
+      el.addEventListener('mousedown', e => { e.preventDefault(); addChip(q); });
+      dropdown.appendChild(el);
+    }
+
+    dropdown.style.display = dropdown.children.length ? 'block' : 'none';
+  }
+
+  function hideDropdown() {
+    dropdown.style.display = 'none';
+    activeIndex = -1;
+  }
+
+  function getOptions() {
+    return Array.from(dropdown.querySelectorAll('.tag-option'));
+  }
+
+  textInput.addEventListener('input', () => showDropdown(textInput.value));
+  textInput.addEventListener('focus', () => { if (textInput.value) showDropdown(textInput.value); });
+  textInput.addEventListener('blur', () => setTimeout(hideDropdown, 150));
+
+  textInput.addEventListener('keydown', function (e) {
+    const options = getOptions();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, options.length - 1);
+      options.forEach((o, i) => o.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, -1);
+      options.forEach((o, i) => o.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && options[activeIndex]) {
+        options[activeIndex].dispatchEvent(new MouseEvent('mousedown'));
+      } else if (textInput.value.trim()) {
+        addChip(textInput.value);
+      }
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    } else if (e.key === 'Backspace' && textInput.value === '' && tags.length) {
+      removeChip(tags[tags.length - 1]);
+    }
+  });
+
+  box.addEventListener('click', () => textInput.focus());
+
+  renderChips();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Invalid link — Rockstar Events{% endblock %}
+{% block content %}
+<h1>Link invalid or expired</h1>
+<div class="card">
+  <p>This verification link is no longer valid. Links expire after 24 hours.</p>
+</div>
+<p style="margin-top:1rem; font-size:.875rem; color:#666;">
+  <a href="{% url 'register' %}">Register again</a>
+</p>
+{% endblock %}

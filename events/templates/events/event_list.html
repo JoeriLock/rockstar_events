@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Events — Rockstar Events{% endblock %}
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
+  <h1 style="margin:0;">Events</h1>
+  {% if user.is_authenticated %}
+    <a class="btn" href="{% url 'create_event' %}">+ Create event</a>
+  {% endif %}
+</div>
+
+{% if all_tags %}
+  <div style="display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.25rem; align-items:center;">
+    <span style="font-size:.8rem; color:#666; margin-right:.2rem;">Filter:</span>
+    {% for tag in all_tags %}
+      {% if tag.name in selected_tags %}
+        <a href="?{% for t in selected_tags %}{% if t != tag.name %}tags={{ t }}&{% endif %}{% endfor %}"
+           style="background:var(--dark); color:var(--yellow); border-radius:4px; padding:.2rem .6rem; font-size:.8rem; font-weight:600; text-decoration:none;">
+          {{ tag.name }} &times;
+        </a>
+      {% else %}
+        <a href="?{% for t in selected_tags %}tags={{ t }}&{% endfor %}tags={{ tag.name }}"
+           style="background:#eee; color:var(--dark); border-radius:4px; padding:.2rem .6rem; font-size:.8rem; font-weight:600; text-decoration:none;">
+          {{ tag.name }}
+        </a>
+      {% endif %}
+    {% endfor %}
+    {% if selected_tags %}
+      <a href="?" style="font-size:.8rem; color:#888; margin-left:.4rem; text-decoration:none;">Clear</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if events %}
+  {% for event in events %}
+    <a href="{% url 'event_detail' event.pk %}" class="card" style="display:flex; gap:1rem; align-items:flex-start; text-decoration:none; color:inherit;">
+      {% if event.image %}
+        <div style="flex-shrink:0;">
+          <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width:80px; height:80px; object-fit:cover; border-radius:6px;">
+        </div>
+      {% endif %}
+      <div>
+        <h3>{{ event.title }}</h3>
+        <p class="meta" style="margin-top:.4rem;">
+          📅 {{ event.starts_at|date:"l, N j, Y" }} &nbsp;·&nbsp; 🕐 {{ event.starts_at|date:"P" }}
+        </p>
+        {% if event.location %}
+          <p class="meta">📍 {{ event.location }}</p>
+        {% endif %}
+        <p class="meta">{{ event.attendee_count }}{% if event.max_attendees %}/{{ event.max_attendees }}{% endif %} going</p>
+        {% if event.tags.all %}
+          <div style="display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.4rem;">
+            {% for tag in event.tags.all %}
+              <span style="background:var(--yellow); color:var(--dark); border-radius:4px; padding:.1rem .4rem; font-size:.75rem; font-weight:600;">{{ tag.name }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </a>
+  {% endfor %}
+{% else %}
+  <p>No events{% if selected_tags %} matching the selected tags{% endif %}.
+    {% if not selected_tags and user.is_authenticated %}<a href="{% url 'create_event' %}">Create the first one.</a>{% endif %}
+  </p>
+{% endif %}
+{% endblock %}

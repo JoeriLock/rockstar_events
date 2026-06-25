@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Registration received — Rockstar Events{% endblock %}
+{% block content %}
+{% if email_verification %}
+  <h1>Check your inbox</h1>
+  <div class="card">
+    <p>We've sent a verification link to <strong>{{ email }}</strong>.</p>
+    <p style="margin-top:.75rem; color:#666;">Click the link in the email to activate your account. It expires in 24 hours.</p>
+  </div>
+{% else %}
+  <h1>You're on the list!</h1>
+  <div class="card">
+    <p>Your account is pending approval. You'll be able to sign in once an admin has activated it.</p>
+  </div>
+{% endif %}
+<p style="margin-top:1rem; font-size:.875rem; color:#666;">
+  <a href="{% url 'poc_login' %}">Back to sign in</a>
+</p>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Register — Rockstar Events{% endblock %}
+{% block content %}
+<h1>Create an account</h1>
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <label>
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.errors %}<span style="color:#c00; font-size:.875rem;">{{ field.errors.0 }}</span>{% endif %}
+        {% if field.help_text %}<span style="color:#666; font-size:.8rem;">{{ field.help_text }}</span>{% endif %}
+      </label>
+    {% endfor %}
+    <button type="submit">Register</button>
+  </form>
+</div>
+<p style="margin-top:1rem; font-size:.875rem; color:#666;">
+  Already have an account? <a href="{% url 'poc_login' %}">Sign in</a>
+</p>
+{% endblock %}

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Linting...",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); if [[ -z \"$f\" ]]; then exit 0; fi; out=\"\"; if [[ \"$f\" == *.py ]] && [[ \"$f\" == */backend/* ]]; then ruff=\"backend/.venv/bin/ruff\"; if [ -x \"$ruff\" ]; then out=$(\"$ruff\" check \"$f\" 2>&1) || true; fi; elif [[ \"$f\" =~ \\.(ts|tsx)$ ]] && [[ \"$f\" == */frontend/* ]]; then eslint=\"frontend/node_modules/.bin/eslint\"; if [ -x \"$eslint\" ]; then out=$(\"$eslint\" \"$f\" 2>&1) || true; fi; fi; if [[ -n \"$out\" ]]; then jq -n --arg o \"$out\" '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":$o}}'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

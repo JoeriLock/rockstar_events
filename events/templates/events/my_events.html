@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}My events — Rockstar Events{% endblock %}
+{% block content %}
+<h1>My events</h1>
+
+{% if registrations %}
+  {% for reg in registrations %}
+    <div class="card" style="display:flex; gap:1rem; align-items:flex-start;">
+      {% if reg.event.image %}
+        <a href="{% url 'event_detail' reg.event.pk %}" style="flex-shrink:0;">
+          <img src="{{ reg.event.image.url }}" alt="{{ reg.event.title }}" style="width:80px; height:80px; object-fit:cover; border-radius:6px;">
+        </a>
+      {% endif %}
+      <div>
+        <h3><a href="{% url 'event_detail' reg.event.pk %}">{{ reg.event.title }}</a></h3>
+        <p class="meta" style="margin-top:.4rem;">
+          📅 {{ reg.event.starts_at|date:"l, N j, Y" }} &nbsp;·&nbsp; 🕐 {{ reg.event.starts_at|date:"P" }}
+        </p>
+        {% if reg.event.location %}
+          <p class="meta">📍 {{ reg.event.location }}</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>You haven't registered for any events yet. <a href="/">Browse events</a></p>
+{% endif %}
+{% endblock %}
