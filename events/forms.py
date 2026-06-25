@@ -1,6 +1,10 @@
+import io
+import os
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from .models import Event, Tag
 
 
@@ -51,6 +55,34 @@ class EventForm(forms.ModelForm):
             self.fields["tags"].initial = ",".join(
                 self.instance.tags.values_list("name", flat=True)
             )
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if not image or not hasattr(image, "read"):
+            return image
+
+        from PIL import Image
+
+        img = Image.open(image)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+
+        max_bytes = 250 * 1024
+        quality = 85
+
+        for quality in range(85, 5, -5):
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=quality, optimize=True)
+            if buffer.tell() <= max_bytes:
+                break
+
+        while buffer.tell() > max_bytes:
+            img = img.resize((img.width * 3 // 4, img.height * 3 // 4), Image.LANCZOS)
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=quality, optimize=True)
+
+        name = os.path.splitext(image.name)[0] + ".jpg"
+        return ContentFile(buffer.getvalue(), name=name)
 
     def save_tags(self, event):
         tag_names = [t.strip().lower() for t in self.cleaned_data.get("tags", "").split(",") if t.strip()]

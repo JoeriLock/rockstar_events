@@ -1,4 +1,6 @@
 django>=5.1
+django-anymail[brevo]>=10.0
 pillow>=10.0
 python-decouple>=3.8
+whitenoise>=6.0
 ruff>=0.5.0
