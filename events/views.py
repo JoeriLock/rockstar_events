@@ -135,12 +135,14 @@ def poc_login(request):
     error = None
     if request.method == "POST":
         from django.contrib.auth import authenticate
-        user = authenticate(request, username=request.POST.get("username"), password=request.POST.get("password"))
+        email = request.POST.get("email", "")
+        username = User.objects.filter(email__iexact=email).values_list("username", flat=True).first()
+        user = authenticate(request, username=username, password=request.POST.get("password")) if username else None
         if user is not None:
             login(request, user)
             return redirect(request.GET.get("next", "event_list"))
-        error = "Invalid username or password."
-    return render(request, "registration/login.html", {"error": error})
+        error = "Invalid email or password."
+    return render(request, "registration/login.html", {"error": error, "email": request.POST.get("email", "")})
 
 
 def poc_logout(request):

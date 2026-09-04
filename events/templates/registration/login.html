@@ -6,8 +6,8 @@
   <form method="post">
     {% csrf_token %}
     <label>
-      <span>Username</span>
-      <input name="username" autofocus required autocomplete="username">
+      <span>Email</span>
+      <input name="email" type="email" value="{{ email|default:'' }}" autofocus required autocomplete="email">
     </label>
     <label>
       <span>Password</span>
