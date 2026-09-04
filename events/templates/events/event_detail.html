@@ -43,9 +43,19 @@
 </h2>
 
 {% if event.registrations.all %}
-  <ul style="padding-left:1.25rem;">
+  <ul style="list-style:none; display:flex; flex-direction:column; gap:.5rem;">
     {% for reg in event.registrations.all %}
-      <li>{{ reg.user.first_name|default:reg.user.username }}</li>
+      <li style="display:flex; align-items:center; gap:.5rem;">
+        {% if reg.user.profile.avatar %}
+          <img src="{{ reg.user.profile.avatar.url }}" alt=""
+               style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
+        {% else %}
+          <span style="width:28px; height:28px; border-radius:50%; background:var(--yellow); color:var(--dark); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:600;">
+            {{ reg.user.first_name|default:reg.user.username|first|upper }}
+          </span>
+        {% endif %}
+        {{ reg.user.first_name|default:reg.user.username }}
+      </li>
     {% endfor %}
   </ul>
 {% else %}

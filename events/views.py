@@ -1,16 +1,19 @@
 from django.conf import settings
-from django.contrib.auth import login, logout
+from django.contrib import messages
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.core import signing
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
-from .forms import EventForm, RegistrationForm
-from .models import Event, EventRegistration, Tag
+from .forms import AvatarForm, EventForm, RegistrationForm, UsernameForm
+from .models import Event, EventRegistration, Profile, Tag
 
 _TOKEN_SALT = "email-verify"
 _TOKEN_MAX_AGE = 60 * 60 * 24  # 24 hours
@@ -31,6 +34,7 @@ class EventListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = qs.filter(starts_at__date__gte=timezone.localdate())
         selected = self.request.GET.getlist("tags")
         if selected:
             qs = qs.filter(tags__name__in=selected).distinct()
@@ -122,11 +126,44 @@ def unregister(request, pk):
 @login_required
 def my_events(request):
     registrations = (
-        EventRegistration.objects.filter(user=request.user)
+        EventRegistration.objects.filter(user=request.user, event__starts_at__date__gte=timezone.localdate())
         .select_related("event")
         .order_by("event__starts_at")
     )
     return render(request, "events/my_events.html", {"registrations": registrations})
+
+
+@login_required
+def edit_profile(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST" and request.POST.get("form") == "profile":
+        username_form = UsernameForm(request.POST, instance=request.user)
+        avatar_form = AvatarForm(request.POST, request.FILES, instance=profile)
+        if username_form.is_valid() and avatar_form.is_valid():
+            username_form.save()
+            avatar_form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("edit_profile")
+    else:
+        username_form = UsernameForm(instance=request.user)
+        avatar_form = AvatarForm(instance=profile)
+
+    if request.method == "POST" and request.POST.get("form") == "password":
+        password_form = PasswordChangeForm(request.user, request.POST)
+        if password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Password updated.")
+            return redirect("edit_profile")
+    else:
+        password_form = PasswordChangeForm(request.user)
+
+    return render(request, "events/edit_profile.html", {
+        "username_form": username_form,
+        "avatar_form": avatar_form,
+        "password_form": password_form,
+    })
 
 
 def poc_login(request):

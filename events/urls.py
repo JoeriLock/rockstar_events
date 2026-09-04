@@ -10,6 +10,7 @@ urlpatterns = [
     path("events/<int:pk>/register/", views.register, name="event_register"),
     path("events/<int:pk>/unregister/", views.unregister, name="event_unregister"),
     path("my-events/", views.my_events, name="my_events"),
+    path("profile/", views.edit_profile, name="edit_profile"),
     path("login/", views.poc_login, name="poc_login"),
     path("logout/", views.poc_logout, name="poc_logout"),
     path("register/", views.signup, name="register"),

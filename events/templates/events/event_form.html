@@ -9,7 +9,15 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% for field in form %}
-      {% if field.name == "tags" %}
+      {% if field.name == "image" %}
+        <label>
+          <span>Image</span>
+          <div id="image-field" data-has-image="{% if event.image %}1{% else %}0{% endif %}" data-image-url="{% if event.image %}{{ event.image.url }}{% endif %}">
+            {{ field }}
+          </div>
+          {% if field.errors %}<span style="color:#c00; font-size:.875rem;">{{ field.errors.0 }}</span>{% endif %}
+        </label>
+      {% elif field.name == "tags" %}
         {{ field }}
         <label style="position:relative;">
           <span>Tags</span>
@@ -79,6 +87,34 @@
   font-size: .75rem;
   font-weight: 600;
 }
+#image-preview-box {
+  position: relative;
+  display: inline-block;
+}
+#image-preview-box img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  border: 1px solid #ccc;
+}
+#image-preview-box button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  min-width: unset;
+  border-radius: 50%;
+  border: none;
+  background: #c00;
+  color: #fff;
+  cursor: pointer;
+  font-size: .9rem;
+  line-height: 1;
+  padding: 0;
+}
 </style>
 
 {{ all_tags|json_script:"all-tags-data" }}
@@ -131,7 +167,7 @@
     const q = query.trim().toLowerCase();
     if (!q) { hideDropdown(); return; }
 
-    const matches = allTags.filter(t => t.includes(q) && !tags.includes(t));
+    const matches = allTags.filter(t => t.toLowerCase().includes(q) && !tags.includes(t));
     const exactMatch = allTags.some(t => t === q) || tags.includes(q);
 
     dropdown.innerHTML = '';
@@ -196,6 +232,71 @@
   box.addEventListener('click', () => textInput.focus());
 
   renderChips();
+})();
+
+(function () {
+  const wrap = document.getElementById('image-field');
+  if (!wrap) return;
+
+  const fileInput = document.getElementById('id_image');
+  const checkbox = document.getElementById('image-clear_id');
+  const hasImage = wrap.dataset.hasImage === '1';
+  const imageUrl = wrap.dataset.imageUrl;
+
+  if (checkbox) checkbox.remove();
+  fileInput.remove();
+  wrap.innerHTML = '';
+
+  fileInput.style.display = 'none';
+  if (checkbox) checkbox.style.display = 'none';
+
+  const previewBox = document.createElement('div');
+  previewBox.id = 'image-preview-box';
+  previewBox.style.display = 'none';
+
+  const previewImg = document.createElement('img');
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.setAttribute('aria-label', 'Remove image');
+  removeBtn.textContent = '×';
+
+  previewBox.appendChild(previewImg);
+  previewBox.appendChild(removeBtn);
+  wrap.appendChild(previewBox);
+  wrap.appendChild(fileInput);
+  if (checkbox) wrap.appendChild(checkbox);
+
+  function showPreview(url) {
+    previewImg.src = url;
+    previewBox.style.display = '';
+    fileInput.style.display = 'none';
+  }
+
+  function showUploadButton() {
+    previewBox.style.display = 'none';
+    fileInput.style.display = '';
+  }
+
+  removeBtn.addEventListener('click', function () {
+    if (checkbox) checkbox.checked = true;
+    fileInput.value = '';
+    showUploadButton();
+  });
+
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files[0]) {
+      if (checkbox) checkbox.checked = false;
+      const reader = new FileReader();
+      reader.onload = e => showPreview(e.target.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+  });
+
+  if (hasImage && imageUrl) {
+    showPreview(imageUrl);
+  } else {
+    showUploadButton();
+  }
 })();
 </script>
 {% endblock %}

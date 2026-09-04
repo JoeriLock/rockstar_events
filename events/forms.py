@@ -5,7 +5,35 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
-from .models import Event, Tag
+from .models import Event, Profile, Tag
+
+
+def compress_image(image):
+    if not image or not hasattr(image, "read"):
+        return image
+
+    from PIL import Image
+
+    img = Image.open(image)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+
+    max_bytes = 250 * 1024
+    quality = 85
+
+    for quality in range(85, 5, -5):
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality, optimize=True)
+        if buffer.tell() <= max_bytes:
+            break
+
+    while buffer.tell() > max_bytes:
+        img = img.resize((img.width * 3 // 4, img.height * 3 // 4), Image.LANCZOS)
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality, optimize=True)
+
+    name = os.path.splitext(image.name)[0] + ".jpg"
+    return ContentFile(buffer.getvalue(), name=name)
 
 
 class RegistrationForm(UserCreationForm):
@@ -38,7 +66,7 @@ class EventForm(forms.ModelForm):
 
     class Meta:
         model = Event
-        fields = ["title", "description", "location", "starts_at", "ends_at", "max_attendees", "image", "tags"]
+        fields = ["title", "description", "location", "starts_at", "ends_at", "max_attendees", "image"]
         widgets = {
             "starts_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
             "ends_at": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -57,34 +85,38 @@ class EventForm(forms.ModelForm):
             )
 
     def clean_image(self):
-        image = self.cleaned_data.get("image")
-        if not image or not hasattr(image, "read"):
-            return image
-
-        from PIL import Image
-
-        img = Image.open(image)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-
-        max_bytes = 250 * 1024
-        quality = 85
-
-        for quality in range(85, 5, -5):
-            buffer = io.BytesIO()
-            img.save(buffer, format="JPEG", quality=quality, optimize=True)
-            if buffer.tell() <= max_bytes:
-                break
-
-        while buffer.tell() > max_bytes:
-            img = img.resize((img.width * 3 // 4, img.height * 3 // 4), Image.LANCZOS)
-            buffer = io.BytesIO()
-            img.save(buffer, format="JPEG", quality=quality, optimize=True)
-
-        name = os.path.splitext(image.name)[0] + ".jpg"
-        return ContentFile(buffer.getvalue(), name=name)
+        return compress_image(self.cleaned_data.get("image"))
 
     def save_tags(self, event):
         tag_names = [t.strip().lower() for t in self.cleaned_data.get("tags", "").split(",") if t.strip()]
         tags = [Tag.objects.get_or_create(name=name)[0] for name in tag_names]
         event.tags.set(tags)
+
+
+class UsernameForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["username"]
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        qs = User.objects.filter(username__iexact=username)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("That username is already taken.")
+        return username
+
+
+class AvatarForm(forms.ModelForm):
+    MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
+
+    class Meta:
+        model = Profile
+        fields = ["avatar"]
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get("avatar")
+        if avatar and hasattr(avatar, "size") and avatar.size > self.MAX_UPLOAD_SIZE:
+            raise forms.ValidationError("Image must be smaller than 5 MB.")
+        return compress_image(avatar)

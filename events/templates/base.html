@@ -42,7 +42,7 @@
     <span class="spacer"></span>
     {% if user.is_authenticated %}
       <a href="{% url 'my_events' %}" style="color:#fff; font-weight:400;">My events</a>
-      <span style="color:#fff;">{{ user.get_full_name|default:user.username }}</span>
+      <a href="{% url 'edit_profile' %}" style="color:#fff; font-weight:400;">{{ user.get_full_name|default:user.username }}</a>
       <a href="{% url 'poc_logout' %}" style="color:#aaa; font-weight:400;">Log out</a>
     {% else %}
       <a href="{% url 'poc_login' %}">Sign in</a>

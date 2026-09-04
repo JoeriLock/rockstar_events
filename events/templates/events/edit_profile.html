@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Edit profile — Rockstar Events{% endblock %}
+{% block content %}
+<h1>Edit profile</h1>
+
+<div class="card">
+  <h2 style="margin-top:0;">Profile</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="profile">
+
+    <label>
+      <span>Username</span>
+      {{ username_form.username }}
+      {% if username_form.username.errors %}<span style="color:#c00; font-size:.875rem;">{{ username_form.username.errors.0 }}</span>{% endif %}
+    </label>
+
+    <label>
+      <span>Profile picture</span>
+      <div id="avatar-field" data-has-image="{% if avatar_form.instance.avatar %}1{% else %}0{% endif %}" data-image-url="{% if avatar_form.instance.avatar %}{{ avatar_form.instance.avatar.url }}{% endif %}">
+        {{ avatar_form.avatar }}
+      </div>
+      {% if avatar_form.avatar.errors %}<span style="color:#c00; font-size:.875rem;">{{ avatar_form.avatar.errors.0 }}</span>{% endif %}
+    </label>
+
+    <button type="submit">Save profile</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;">Change password</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="password">
+
+    <label>
+      <span>Current password</span>
+      {{ password_form.old_password }}
+      {% if password_form.old_password.errors %}<span style="color:#c00; font-size:.875rem;">{{ password_form.old_password.errors.0 }}</span>{% endif %}
+    </label>
+
+    <label>
+      <span>New password</span>
+      {{ password_form.new_password1 }}
+      {% if password_form.new_password1.errors %}<span style="color:#c00; font-size:.875rem;">{{ password_form.new_password1.errors.0 }}</span>{% endif %}
+    </label>
+
+    <label>
+      <span>Confirm new password</span>
+      {{ password_form.new_password2 }}
+      {% if password_form.new_password2.errors %}<span style="color:#c00; font-size:.875rem;">{{ password_form.new_password2.errors.0 }}</span>{% endif %}
+    </label>
+
+    <button type="submit">Change password</button>
+  </form>
+</div>
+
+<style>
+#avatar-preview-box {
+  position: relative;
+  display: inline-block;
+}
+#avatar-preview-box img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  border: 1px solid #ccc;
+}
+#avatar-preview-box button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  min-width: unset;
+  border-radius: 50%;
+  border: none;
+  background: #c00;
+  color: #fff;
+  cursor: pointer;
+  font-size: .9rem;
+  line-height: 1;
+  padding: 0;
+}
+</style>
+
+<script>
+(function () {
+  const wrap = document.getElementById('avatar-field');
+  if (!wrap) return;
+
+  const fileInput = wrap.querySelector('input[type="file"]');
+  const checkbox = wrap.querySelector('input[type="checkbox"]');
+  const hasImage = wrap.dataset.hasImage === '1';
+  const imageUrl = wrap.dataset.imageUrl;
+
+  if (checkbox) checkbox.remove();
+  fileInput.remove();
+  wrap.innerHTML = '';
+
+  fileInput.style.display = 'none';
+  if (checkbox) checkbox.style.display = 'none';
+
+  const previewBox = document.createElement('div');
+  previewBox.id = 'avatar-preview-box';
+  previewBox.style.display = 'none';
+
+  const previewImg = document.createElement('img');
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.setAttribute('aria-label', 'Remove profile picture');
+  removeBtn.textContent = '×';
+
+  previewBox.appendChild(previewImg);
+  previewBox.appendChild(removeBtn);
+  wrap.appendChild(previewBox);
+  wrap.appendChild(fileInput);
+  if (checkbox) wrap.appendChild(checkbox);
+
+  function showPreview(url) {
+    previewImg.src = url;
+    previewBox.style.display = '';
+    fileInput.style.display = 'none';
+  }
+
+  function showUploadButton() {
+    previewBox.style.display = 'none';
+    fileInput.style.display = '';
+  }
+
+  removeBtn.addEventListener('click', function () {
+    if (checkbox) checkbox.checked = true;
+    fileInput.value = '';
+    showUploadButton();
+  });
+
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files[0]) {
+      if (checkbox) checkbox.checked = false;
+      const reader = new FileReader();
+      reader.onload = e => showPreview(e.target.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+  });
+
+  if (hasImage && imageUrl) {
+    showPreview(imageUrl);
+  } else {
+    showUploadButton();
+  }
+})();
+</script>
+{% endblock %}
