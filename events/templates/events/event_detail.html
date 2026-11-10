@@ -2,7 +2,9 @@
 {% block title %}{{ event.title }} — Rockstar Events{% endblock %}
 {% block content %}
 <div style="display:flex; align-items:center; justify-content:space-between;">
-  <a class="btn btn-secondary" href="/">&larr; All events</a>
+  <a class="btn btn-secondary" href="/" style="display:inline-flex; align-items:center; gap:.4rem;">
+    <span style="font-size:1.2em; line-height:1;">&larr;</span> All events
+  </a>
   {% if user == event.organizer %}
     <div style="display:flex; gap:.5rem;">
       <a class="btn" href="{% url 'edit_event' event.pk %}">Edit</a>
