@@ -8,11 +8,30 @@
     :root { --yellow: #FFE000; --dark: #232323; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f5f5f5; color: var(--dark); }
-    nav { background: var(--dark); color: #fff; padding: .75rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+    nav { position: relative; background: var(--dark); color: #fff; padding: .75rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
     nav a { color: var(--yellow); text-decoration: none; font-weight: 600; }
     nav a:hover { text-decoration: underline; }
     nav span { color: #fff; }
     nav .spacer { flex: 1; }
+    .nav-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; line-height: 1; cursor: pointer; padding: .25rem .5rem; }
+    .nav-links { display: flex; align-items: center; gap: 1rem; }
+    @media (max-width: 640px) {
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--dark);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .75rem 1.5rem 1rem;
+        z-index: 50;
+      }
+      .nav-links.open { display: flex; }
+    }
     main { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
     h1 { margin-bottom: 1.25rem; }
     h2 { margin: 1.5rem 0 .75rem; }
@@ -41,13 +60,27 @@
     <a href="/">Rockstar Events</a>
     <span class="spacer"></span>
     {% if user.is_authenticated %}
-      <a href="{% url 'my_events' %}" style="color:#fff; font-weight:400;">My events</a>
-      <a href="{% url 'edit_profile' %}" style="color:#fff; font-weight:400;">{{ user.get_full_name|default:user.username }}</a>
-      <a href="{% url 'poc_logout' %}" style="color:#aaa; font-weight:400;">Log out</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
+      <div class="nav-links" id="nav-links">
+        <a href="{% url 'my_events' %}" style="color:#fff; font-weight:400;">My events</a>
+        <a href="{% url 'edit_profile' %}" style="color:#fff; font-weight:400;">{{ user.get_full_name|default:user.username }}</a>
+        <a href="{% url 'poc_logout' %}" style="color:#aaa; font-weight:400;">Log out</a>
+      </div>
     {% else %}
       <a href="{% url 'poc_login' %}">Sign in</a>
     {% endif %}
   </nav>
+  <script>
+    (function () {
+      const toggle = document.getElementById('nav-toggle');
+      const links = document.getElementById('nav-links');
+      if (!toggle || !links) return;
+      toggle.addEventListener('click', function () {
+        const open = links.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    })();
+  </script>
   <main>
     {% if messages %}
       <ul class="messages">

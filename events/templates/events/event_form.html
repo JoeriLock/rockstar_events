@@ -235,6 +235,31 @@
 })();
 
 (function () {
+  const startInput = document.getElementById('id_starts_at');
+  const endInput = document.getElementById('id_ends_at');
+  if (!startInput || !endInput) return;
+
+  // datetime-local values are "YYYY-MM-DDTHH:MM" (fixed width), so string comparison orders them correctly.
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function plusOneHour(value) {
+    const [date, time] = value.split('T');
+    const [y, m, d] = date.split('-').map(Number);
+    const [h, min] = time.split(':').map(Number);
+    const dt = new Date(y, m - 1, d, h, min + 60);
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}` +
+           `T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  startInput.addEventListener('change', function () {
+    if (!startInput.value) return;
+    if (!endInput.value || endInput.value <= startInput.value) {
+      endInput.value = plusOneHour(startInput.value);
+    }
+  });
+})();
+
+(function () {
   const wrap = document.getElementById('image-field');
   if (!wrap) return;
 
